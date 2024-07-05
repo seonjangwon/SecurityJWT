@@ -1,5 +1,7 @@
 package com.security.jwt.config;
 
+import com.security.jwt.jwt.JWTFilter;
+import com.security.jwt.jwt.JWTUtil;
 import com.security.jwt.jwt.LoginFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
+    private final JWTUtil jwtUtil;
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder(){
@@ -57,8 +60,12 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
         );
 
+        // JWTFilter  추가 LoginFilter 앞에 추가
+        http.addFilterBefore(new JWTFilter(jwtUtil), LoginFilter.class);
+
+
         //필터 추가 LoginFilter()는 인자를 받음 (AuthenticationManager() 메소드에 authenticationConfiguration 객체를 넣어야 함) 따라서 등록 필요
-        http.addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration)), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration),jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
 
 
