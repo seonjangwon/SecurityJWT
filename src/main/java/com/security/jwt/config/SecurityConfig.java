@@ -1,8 +1,10 @@
 package com.security.jwt.config;
 
+import com.security.jwt.jwt.CustomLogoutFilter;
 import com.security.jwt.jwt.JWTFilter;
 import com.security.jwt.jwt.JWTUtil;
 import com.security.jwt.jwt.LoginFilter;
+import com.security.jwt.repository.RefreshRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -28,6 +30,7 @@ public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JWTUtil jwtUtil;
+    private final RefreshRepository refreshRepository;
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder(){
@@ -83,6 +86,8 @@ public class SecurityConfig {
         http.authorizeHttpRequests((auth) -> auth
                 // 모두허용
                 .requestMatchers("/", "/login", "/join").permitAll()
+                // refresh 토큰으로 access 토큰 발급 경로
+                .requestMatchers("/reissue").permitAll()
                 // 어드민 한정 허용
                 .requestMatchers("/admin").hasRole("ADMIN")
                 // 나머지 로그인 허용
@@ -94,8 +99,10 @@ public class SecurityConfig {
 
 
         //필터 추가 LoginFilter()는 인자를 받음 (AuthenticationManager() 메소드에 authenticationConfiguration 객체를 넣어야 함) 따라서 등록 필요
-        http.addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration),jwtUtil), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration),jwtUtil,refreshRepository), UsernamePasswordAuthenticationFilter.class);
 
+        // 로그아웃 필터 추가? 교체?
+        http.addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository) , LoginFilter.class);
 
 
         // 세션 설정
